@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>작업 로그</title>
+    <script>
+        async function submitLog() {
+            const task_name = document.getElementById('task_name').value;
+            const worker = document.getElementById('worker').value;
+            const task_result = document.getElementById('task_result').value;
+            const task_cause = document.getElementById('task_cause').value;
+
+            try {
+                const response = await fetch('/log', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task_name, worker, task_result, task_cause })
+                });
+
+                if (response.ok) {
+                    alert('로그가 성공적으로 제출되었습니다.');
+                    document.getElementById('logForm').reset();
+                    loadLogs();
+                } else {
+                    const errorData = await response.json();
+                    alert(`로그 제출 실패: ${errorData.message}`);
+                }
+            } catch (error) {
+                alert('로그 제출 중 오류가 발생했습니다.');
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const response = await fetch('/logs');
+                if (!response.ok) {
+                    throw new Error('로그 불러오기 실패');
+                }
+                const logs = await response.json();
+                const logsContainer = document.getElementById('logs');
+                logsContainer.innerHTML = '';
+
+                logs.forEach(log => {
+                    const logItem = document.createElement('div');
+                    logItem.innerHTML = `
+                        <strong>작업:</strong> ${log.task_name}<br>
+                        <strong>작업자:</strong> ${log.worker}<br>
+                        <strong>결과:</strong> ${log.task_result}<br>
+                        <strong>원인:</strong> ${log.task_cause}<br>
+                        <strong>시간:</strong> ${log.task_time}<br><br>
+                    `;
+                    logsContainer.appendChild(logItem);
+                });
+            } catch (error) {
+                alert('로그를 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLogs();
+        });
+    </script>
+</head>
+<body>
+    <h1>작업 로그</h1>
+    <form id="logForm" onsubmit="event.preventDefault(); submitLog();">
+        <label for="task_name">작업명:</label>
+        <input type="text" id="task_name" name="task_name" required><br>
+        <label for="worker">작업자:</label>
+        <input type="text" id="worker" name="worker" required><br>
+        <label for="task_result">결과:</label>
+        <textarea id="task_result" name="task_result" required></textarea><br>
+        <label for="task_cause">원인:</label>
+        <textarea id="task_cause" name="task_cause" required></textarea><br>
+        <button type="submit">로그 제출</button>
+    </form>
+    <h2>로그 목록</h2>
+    <div id="logs"></div>
+</body>
+</html>
